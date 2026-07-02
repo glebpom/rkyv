@@ -15,3 +15,4 @@ fuzz_target!(
 fuzz_target!(
     hashmap_simd_oob_read as std::collections::HashMap<String, Vec<u32>>
 );
+fuzz_target!(hashmap_u64_bytes_oob as std::collections::HashMap<u64, Vec<u8>>);
