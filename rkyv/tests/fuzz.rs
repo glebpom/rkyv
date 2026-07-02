@@ -12,3 +12,6 @@ macro_rules! fuzz_target {
 fuzz_target!(
     hashmap_string_oob_read as std::collections::HashMap<String, Vec<u32>>
 );
+fuzz_target!(
+    hashmap_simd_oob_read as std::collections::HashMap<String, Vec<u32>>
+);
