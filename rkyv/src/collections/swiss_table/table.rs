@@ -94,7 +94,7 @@ impl<T> ArchivedHashTable<T> {
     /// - `this` must point to a valid `ArchivedHashTable`
     /// - `index` must be less than `len()`
     unsafe fn control_raw(this: *mut Self, index: usize) -> *const u8 {
-        debug_assert!(unsafe { !(*this).is_empty() });
+        debug_assert_ne!(unsafe { (*this).capacity() }, 0);
 
         // SAFETY: As an invariant of `ArchivedHashTable`, if `self` is not
         // empty then `self.ptr` is a valid relative pointer. Since `index` is
