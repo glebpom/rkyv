@@ -641,6 +641,25 @@ mod verify {
 
     impl Error for UnwrappedControlByte {}
 
+    #[derive(Debug)]
+    struct WrongNumberOfElements {
+        expected: usize,
+        actual: usize,
+    }
+
+    impl fmt::Display for WrongNumberOfElements {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(
+                f,
+                "hash table contained a different number of elements than \
+                 indicated by its length (expected: {}, actual: {})",
+                self.expected, self.actual,
+            )
+        }
+    }
+
+    impl Error for WrongNumberOfElements {}
+
     unsafe impl<C, T> Verify<C> for ArchivedHashTable<T>
     where
         C: Fallible + ArchiveContext + ?Sized,
@@ -677,6 +696,7 @@ mod verify {
                 // SAFETY: We have checked that `self` is not empty.
                 let mut controls = unsafe { Self::control_iter(this) };
                 let mut base_index = 0;
+                let mut count = 0;
                 'outer: while base_index < cap {
                     while let Some(bit) = controls.next_full() {
                         let index = base_index + bit;
@@ -690,10 +710,18 @@ mod verify {
                                 context,
                             )?;
                         }
+                        count += 1;
                     }
 
                     controls.move_next();
                     base_index += Group::WIDTH;
+                }
+
+                if count != len {
+                    fail!(WrongNumberOfElements {
+                        expected: len,
+                        actual: count,
+                    });
                 }
 
                 // Verify that wrapped bytes are set correctly
