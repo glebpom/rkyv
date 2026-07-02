@@ -37,3 +37,11 @@ struct ComplexBag {
 fuzz_target!(complex_struct_uaf as ComplexBag);
 
 fuzz_target!(swiss_table_unchecked_assert as HashMap<String, String>);
+
+fuzz_target!(
+    hashmap_archivedstring_deserialize_segv as HashMap<String, String>
+);
+fuzz_target!(
+    hashmap_archivedstring_deserialize_segv_alt_vec_wrapper
+        as Vec<HashMap<String, String>>
+);
