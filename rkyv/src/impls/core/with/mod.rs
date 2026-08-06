@@ -865,8 +865,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use core::f32;
-
     use crate::{
         api::test::{deserialize, roundtrip, roundtrip_with, to_archived},
         niche::niching::{NaN, Zero},
