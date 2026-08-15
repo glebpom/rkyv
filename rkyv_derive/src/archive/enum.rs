@@ -4,7 +4,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{
     parse_quote, spanned::Spanned as _, DataEnum, Error, Field, Fields,
-    Generics, Ident, Index, Member, Path,
+    Generics, Ident, Index, Member, Path, Type,
 };
 
 use crate::{
@@ -40,7 +40,9 @@ pub fn impl_enum(
     let mut public = TokenStream::new();
     let mut private = TokenStream::new();
 
-    if attributes.as_type.is_none() {
+    if let Some(as_type) = attributes.as_type.as_ref() {
+        check_as_self(as_type, name)?;
+    } else {
         public.extend(generate_archived_type(
             printing, attributes, generics, data,
         )?);
@@ -172,6 +174,30 @@ pub fn impl_enum(
             #archive_impl
         };
     })
+}
+
+fn check_as_self(ty: &Type, name: &Ident) -> Result<(), Error> {
+    match ty {
+        Type::Group(group) => check_as_self(&group.elem, name),
+        Type::Path(path) => {
+            // Enums may have `as = Self` or `as = Name`
+            let is_self = path.path.leading_colon.is_none()
+                && path.path.segments.len() == 1
+                && path.path.segments.first().is_some_and(|segment| {
+                    let is_self = segment.ident == "Self";
+                    let is_name = segment.ident == *name;
+                    is_self || is_name
+                });
+            if path.qself.is_some() || !is_self {
+                return Err(Error::new_spanned(
+                    ty,
+                    "enums may only use `as = Self`",
+                ));
+            }
+            Ok(())
+        }
+        _ => Err(Error::new_spanned(ty, "enums may only use `as = Self`")),
+    }
 }
 
 fn generate_archived_type(
@@ -338,6 +364,7 @@ fn generate_resolve_arms(
     let Printing {
         rkyv_path,
         resolver_name,
+        archived_type,
         ..
     } = printing;
     let (_, ty_generics, _) = generics.split_for_impl();
@@ -360,17 +387,26 @@ fn generate_resolve_arms(
             })
             .collect::<Vec<_>>();
 
-        let (self_bindings, resolver_bindings) = variant
+        let self_bindings = variant
+            .fields
+            .iter()
+            .enumerate()
+            .map(|(i, field)| Ident::new(&format!("self_{i}"), field.span()))
+            .collect::<Vec<_>>();
+        let resolver_bindings = variant
             .fields
             .iter()
             .enumerate()
             .map(|(i, field)| {
-                (
-                    Ident::new(&format!("self_{i}"), field.span()),
-                    Ident::new(&format!("resolver_{i}"), field.span()),
-                )
+                Ident::new(&format!("resolver_{i}"), field.span())
             })
-            .unzip::<_, _, Vec<_>, Vec<_>>();
+            .collect::<Vec<_>>();
+        let check_bindings = variant
+            .fields
+            .iter()
+            .enumerate()
+            .map(|(i, field)| Ident::new(&format!("check_{i}"), field.span()))
+            .collect::<Vec<_>>();
 
         let resolves = variant
             .fields
@@ -390,6 +426,35 @@ fn generate_resolve_arms(
                         #name::#variant_name {
                             #(#members: #self_bindings,)*..
                         } => {
+                            if false {
+                                let archived_value = unsafe {
+                                    ::core::ptr::null::<#archived_type>().read()
+                                };
+                                match archived_value {
+                                    Self::Archived::#variant_name {
+                                        #(#members: mut #check_bindings,)*
+                                    } => {#(
+                                        let out_field = unsafe {
+                                            #rkyv_path::Place::new_unchecked(
+                                                0,
+                                                &mut #check_bindings,
+                                            )
+                                        };
+                                        #resolves(
+                                            #self_bindings,
+                                            #resolver_bindings,
+                                            out_field,
+                                        );
+                                    )*}
+                                    _ => unsafe {
+                                        ::core::hint::unreachable_unchecked()
+                                    },
+                                }
+                                unsafe {
+                                    ::core::hint::unreachable_unchecked();
+                                }
+                            }
+
                             let out = unsafe {
                                 out.cast_unchecked::<
                                     #archived_variant_name #ty_generics
@@ -433,6 +498,35 @@ fn generate_resolve_arms(
                 #resolver_name::#variant_name( #(#resolver_bindings,)* ) => {
                     match __this {
                         #name::#variant_name(#(#self_bindings,)* ..) => {
+                            if false {
+                                let archived_value = unsafe {
+                                    ::core::ptr::null::<#archived_type>().read()
+                                };
+                                match archived_value {
+                                    Self::Archived::#variant_name(
+                                        #(mut #check_bindings,)*
+                                    ) => { #(
+                                        let out_field = unsafe {
+                                            #rkyv_path::Place::new_unchecked(
+                                                0,
+                                                &mut #check_bindings,
+                                            )
+                                        };
+                                        #resolves(
+                                            #self_bindings,
+                                            #resolver_bindings,
+                                            out_field,
+                                        );
+                                    )* }
+                                    _ => unsafe {
+                                        ::core::hint::unreachable_unchecked()
+                                    },
+                                }
+                                unsafe {
+                                    ::core::hint::unreachable_unchecked();
+                                }
+                            }
+
                             let out = unsafe {
                                 out.cast_unchecked::<
                                     #archived_variant_name #ty_generics
@@ -472,6 +566,33 @@ fn generate_resolve_arms(
             }),
             Fields::Unit => result.extend(quote! {
                 #resolver_name::#variant_name => {
+                    if false {
+                        let archived_value = unsafe {
+                            ::core::ptr::null::<#archived_type>().read()
+                        };
+                        match archived_value {
+                            Self::Archived::#variant_name {} => { #(
+                                let out_field = unsafe {
+                                    #rkyv_path::Place::new_unchecked(
+                                        0,
+                                        &mut #check_bindings,
+                                    )
+                                };
+                                #resolves(
+                                    #self_bindings,
+                                    #resolver_bindings,
+                                    out_field,
+                                );
+                            )* }
+                            _ => unsafe {
+                                ::core::hint::unreachable_unchecked()
+                            },
+                        }
+                        unsafe {
+                            ::core::hint::unreachable_unchecked();
+                        }
+                    }
+
                     let out = unsafe {
                         out.cast_unchecked::<ArchivedTag>()
                     };
