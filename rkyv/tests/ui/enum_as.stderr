@@ -33,6 +33,14 @@ help: the trait `Archive` is not implemented for `NotSelf`
           and $N others
   = note: this error originates in the derive macro `rkyv::Serialize` (in Nightly builds, run with -Z macro-backtrace for more info)
 
+error[E0276]: impl has stricter requirements than trait
+ --> tests/ui/enum_as.rs:1:25
+  |
+1 | #[derive(rkyv::Archive, rkyv::Serialize)]
+  |                         ^^^^^^^^^^^^^^^ impl has extra requirement `Result<<NotSelf as Archive>::Resolver, <__S as Fallible>::Error> well-formed`
+  |
+  = note: this error originates in the derive macro `rkyv::Serialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
 error[E0277]: the trait bound `NotSelf: Archive` is not satisfied
  --> tests/ui/enum_as.rs:3:6
   |
@@ -87,6 +95,32 @@ note: required by a bound in `rkyv::Archive::Archived`
   |     type Archived: Portable;
   |                    ^^^^^^^^ required by this bound in `Archive::Archived`
 
+error[E0277]: the trait bound `NotSelf: Archive` is not satisfied
+  |
+help: the trait `Archive` is not implemented for `NotSelf`
+ --> tests/ui/enum_as.rs:3:1
+  |
+3 | enum NotSelf {
+  | ^^^^^^^^^^^^
+  = help: the following other types implement trait `Archive`:
+            ()
+            (T0, T1)
+            (T0, T1, T2)
+            (T0, T1, T2, T3)
+            (T0, T1, T2, T3, T4)
+            (T0, T1, T2, T3, T4, T5)
+            (T0, T1, T2, T3, T4, T5, T6)
+            (T0, T1, T2, T3, T4, T5, T6, T7)
+          and $N others
+
+error: the type `Result<<NotSelf as Archive>::Resolver, <__S as Fallible>::Error>` is not well-formed
+ --> tests/ui/enum_as.rs:1:25
+  |
+1 | #[derive(rkyv::Archive, rkyv::Serialize)]
+  |                         ^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the derive macro `rkyv::Serialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
 error[E0271]: type mismatch resolving `<i32 as Archive>::Archived == i32`
   --> tests/ui/enum_as.rs:27:45
    |
@@ -116,51 +150,3 @@ note: required by a bound in `to_bytes`
    | |         HighSerializer<AlignedVec, ArenaHandle<'a>, E>,
    | |     >,
    | |_____^ required by this bound in `to_bytes`
-
-error[E0277]: the trait bound `i32: Portable` is not satisfied
-  --> tests/ui/enum_as.rs:27:45
-   |
-27 |     rkyv::to_bytes::<rkyv::rancor::Failure>(&WithGenerics::Foo(12i32)).unwrap();
-   |     --------------------------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Portable` is not implemented for `i32`
-   |     |
-   |     required by a bound introduced by this call
-   |
-help: the following other types implement trait `Portable`
-  --> src/impls/core/primitive.rs
-   |
-   |               unsafe impl Portable for $ty {}
-   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |               |
-   |               `i8`
-   |               `u8`
-...
-   | / unsafe_impl_primitive! {
-   | |     (),
-   | |     bool,
-   | |     i8,
-...  |
-   | |     rend::unaligned::u128_ule,
-   | | }
-   | |_- in this macro invocation
-note: required for `WithGenerics<i32>` to implement `for<'a> Serialize<Strategy<Serializer<AlignedVec, ArenaHandle<'a>, rkyv::ser::sharing::Share>, Failure>>`
-  --> tests/ui/enum_as.rs:22:6
-   |
-17 |         T: rkyv::Portable,
-   |            -------------- unsatisfied trait bound
-...
-22 | enum WithGenerics<T> {
-   |      ^^^^^^^^^^^^^^^
-   = help: consider manually implementing `for<'a> Serialize<Strategy<Serializer<AlignedVec, ArenaHandle<'a>, rkyv::ser::sharing::Share>, Failure>>` to avoid undesired bounds caused by "imperfect derives"
-   = note: to learn more, visit <https://github.com/rust-lang/rust/issues/26925>
-note: required by a bound in `to_bytes`
-  --> src/api/high/mod.rs
-   |
-   |   pub fn to_bytes<E>(
-   |          -------- required by a bound in this function
-...
-   |       #[rustfmt::skip] value: &impl for<'a> Serialize<
-   |  ___________________________________^
-   | |         HighSerializer<AlignedVec, ArenaHandle<'a>, E>,
-   | |     >,
-   | |_____^ required by this bound in `to_bytes`
-   = note: this error originates in the macro `unsafe_impl_primitive` (in Nightly builds, run with -Z macro-backtrace for more info)
