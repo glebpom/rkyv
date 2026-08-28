@@ -44,9 +44,9 @@ impl<T, const N: usize> InlineVec<T, N> {
         let len = self.len;
         self.len = 0;
 
-        for i in 0..len {
+        for element in &mut self.elements[..len] {
             unsafe {
-                self.elements[i].as_mut_ptr().drop_in_place();
+                element.as_mut_ptr().drop_in_place();
             }
         }
     }
