@@ -914,6 +914,7 @@ const _: () = {
                         read_buf_len - initialized,
                     );
                 }
+                initialized = read_buf_len;
 
                 // The entire read buffer is now initialized, so we can create a
                 // mutable slice of it.
@@ -925,12 +926,13 @@ const _: () = {
                 };
 
                 match r.read(read_buf) {
-                    Ok(read) => {
+                    Ok(claimed) => {
+                        let read = usize::min(claimed, read_buf_len);
                         // We filled `read` additional bytes.
                         unsafe {
                             self.set_len(self.len() + read);
                         }
-                        initialized = read_buf_len - read;
+                        initialized -= read;
 
                         if read == 0 {
                             return Ok(self.len() - start_len);
@@ -945,11 +947,10 @@ const _: () = {
                 if self.len() == self.capacity() && self.capacity() == start_cap
                 {
                     // The buffer might be an exact fit. Let's read into a probe
-                    // buffer and see if it returns `Ok(0)`.
-                    // If so, we've avoided an unnecessary
-                    // doubling of the capacity. But if not, append the
-                    // probe buffer to the primary buffer and let its capacity
-                    // grow.
+                    // buffer and see if it returns `Ok(0)`. If so, we've
+                    // avoided an unnecessary doubling of the capacity. But if
+                    // not, append the probe buffer to the primary buffer and
+                    // let its capacity grow.
                     let mut probe = [0u8; 32];
 
                     loop {
@@ -1131,5 +1132,35 @@ where
         let mut result = AlignedVec::with_capacity(field.len());
         result.extend_from_slice(field.as_slice());
         Ok(result)
+    }
+}
+
+#[cfg(feature = "std")]
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bad_read_impl() {
+        use std::io;
+
+        struct BadReader {
+            is_first: bool,
+        }
+
+        impl io::Read for BadReader {
+            fn read(&mut self, _: &mut [u8]) -> io::Result<usize> {
+                if self.is_first {
+                    self.is_first = false;
+                    Ok(usize::MAX)
+                } else {
+                    Ok(0)
+                }
+            }
+        }
+
+        let mut v = AlignedVec::<16>::new();
+        v.extend_from_reader(&mut BadReader { is_first: true })
+            .unwrap();
     }
 }
