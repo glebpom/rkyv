@@ -137,8 +137,6 @@ note: required for `WithGenerics<i32>` to implement `for<'a> Serialize<Strategy<
 ...
 22 | enum WithGenerics<T> {
    |      ^^^^^^^^^^^^^^^
-   = help: consider manually implementing `for<'a> Serialize<Strategy<Serializer<AlignedVec, ArenaHandle<'a>, rkyv::ser::sharing::Share>, Failure>>` to avoid undesired bounds caused by "imperfect derives"
-   = note: to learn more, visit <https://github.com/rust-lang/rust/issues/26925>
 note: required by a bound in `to_bytes`
   --> src/api/high/mod.rs
    |

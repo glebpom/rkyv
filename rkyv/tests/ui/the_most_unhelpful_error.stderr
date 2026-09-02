@@ -16,6 +16,4 @@ note: required for `ArchivedMyStruct` to implement `Deserialize<MyStruct, Strate
    |                              ^^^^^^^^^^^
 13 | #[rkyv(deserialize_bounds(__D: MyTrait))]
    |                                ------- unsatisfied trait bound
-   = help: consider manually implementing `Deserialize<MyStruct, Strategy<NotSerializer, Failure>>` to avoid undesired bounds caused by "imperfect derives"
-   = note: to learn more, visit <https://github.com/rust-lang/rust/issues/26925>
    = note: this error originates in the derive macro `Deserialize` (in Nightly builds, run with -Z macro-backtrace for more info)
