@@ -41,7 +41,18 @@ unsafe impl<T: NoUndef, const N: usize> NoUndef for [T; N] {}
 unsafe impl<T: NoUndef> NoUndef for [T] {}
 
 /// Returns the layout of a type from its metadata.
-pub trait LayoutRaw
+///
+/// # Safety
+///
+/// `layout_raw` must return the layout that a pointer to `Self` with the
+/// provided metadata would have. For example, `[u8]` must return the layout of
+/// a slice of `u8` with the given length.
+///
+/// `layout_raw` must return `Err(LayoutError)` for metadata that creates an
+/// invalid layout for the type. Note that `layout_raw` is safe to call and may
+/// be called with any representable values for the metadata, not just the valid
+/// values for the type.
+pub unsafe trait LayoutRaw
 where
     Self: Pointee,
 {

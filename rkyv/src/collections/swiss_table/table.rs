@@ -729,7 +729,7 @@ mod verify {
                     let byte = unsafe { *Self::control_raw(this, i) };
                     let wrapped = unsafe { *Self::control_raw(this, i % cap) };
                     if wrapped != byte {
-                        fail!(UnwrappedControlByte { index: i })
+                        fail!(UnwrappedControlByte { index: i });
                     }
                 }
 

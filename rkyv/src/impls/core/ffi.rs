@@ -17,7 +17,7 @@ use crate::{
 
 // CStr
 
-impl LayoutRaw for CStr {
+unsafe impl LayoutRaw for CStr {
     #[inline]
     fn layout_raw(
         metadata: <Self as Pointee>::Metadata,

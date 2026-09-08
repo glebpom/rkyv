@@ -1,6 +1,7 @@
 {
   "rust-analyzer.cargo.features": [
     "arrayvec-0_7",
+    "bytecheck",
     "bytes-1",
     "hashbrown-0_14",
     "hashbrown-0_15",

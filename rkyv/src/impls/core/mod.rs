@@ -27,7 +27,7 @@ mod result;
 mod time;
 pub(crate) mod with;
 
-impl<T> LayoutRaw for T {
+unsafe impl<T> LayoutRaw for T {
     fn layout_raw(
         _: <Self as Pointee>::Metadata,
     ) -> Result<Layout, LayoutError> {
@@ -35,7 +35,7 @@ impl<T> LayoutRaw for T {
     }
 }
 
-impl<T> LayoutRaw for [T] {
+unsafe impl<T> LayoutRaw for [T] {
     fn layout_raw(
         metadata: <Self as Pointee>::Metadata,
     ) -> Result<Layout, LayoutError> {
@@ -43,7 +43,7 @@ impl<T> LayoutRaw for [T] {
     }
 }
 
-impl LayoutRaw for str {
+unsafe impl LayoutRaw for str {
     #[inline]
     fn layout_raw(
         metadata: <Self as Pointee>::Metadata,
