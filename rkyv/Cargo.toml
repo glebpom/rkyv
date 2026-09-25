@@ -12,6 +12,9 @@ keywords = ["archive", "rkyv", "serialization", "zero-copy", "no_std"]
 categories = ["encoding", "no-std", "no-std::no-alloc"]
 documentation = "https://docs.rs/rkyv"
 
+[package.metadata.docs.rs]
+features = ["bytecheck"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -65,9 +68,6 @@ hashbrown-0_17 = ["dep:hashbrown"]
 indexmap-2 = ["dep:indexmap-2", "alloc"]
 triomphe-0_1 = ["dep:triomphe-0_1", "alloc"]
 uuid-1 = ["dep:uuid-1", "bytecheck?/uuid-1"]
-
-[package.metadata.docs.rs]
-features = ["bytecheck"]
 
 [dev-dependencies]
 ahash = "0.8"

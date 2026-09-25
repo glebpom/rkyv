@@ -11,6 +11,9 @@ repository.workspace = true
 keywords = ["archive", "rkyv", "serialization", "zero-copy", "no_std"]
 categories = ["encoding", "no-std", "no-std::no-alloc"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
@@ -24,6 +27,3 @@ quote = { workspace = true, features = ["proc-macro"] }
 [features]
 default = []
 bytecheck  = []
-
-[package.metadata.docs.rs]
-all-features = true
